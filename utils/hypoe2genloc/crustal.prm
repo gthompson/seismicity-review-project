@@ -1,0 +1,153 @@
+! Top of models is at 3 km above sea level
+! Model 1: GULF OF ALASKA
+VELOC   1       1 5.0        0.0       0. 
+VELOC   1       2 6.8       10.0       0.
+VELOC   1       3 8.1       15.5       0. 
+
+! Model 2: SOUTH OF 62.5 N (Except for volcanic axis & Gulf of AK)
+VELOC   2       1  5.3        0.0      0.
+VELOC   2       2  5.6        7.0      0.
+VELOC   2       3  6.2       13.0      0.
+VELOC   2       4  6.9       18.0      0.
+VELOC   2       5  7.4       23.0      0.
+VELOC   2       6  7.7       28.0      0.
+VELOC   2       7  7.9       36.0      0.
+VELOC   2       8  8.1       50.0      0.
+VELOC   2       9  8.3       68.0      0.
+
+! Model 3: NORTH OF 62.5 N 
+VELOC   3       1  5.9        0.0      0.
+VELOC   3       2  7.40      27.4      0.
+VELOC   3       3  7.90      43.2      0.
+VELOC   3       4  8.29      79.0      0.
+VELOC   3       5 10.40     304.0      0.
+VELOC   3       6 12.60     548.0      0.
+
+! Model 4 (and 5 for S): VOLCANIC AXIS - Redoubt through Iliamna
+! but not including Iliamna
+VELOC   4       1  2.90       0.0      1.80
+VELOC   4       2  5.10       1.3      1.80
+VELOC   4       3  6.40       4.5      1.72
+VELOC   4       4  7.00      20.0      1.78
+
+! Model 6 (and 7 for S): VOLCANIC AXIS - Spurr
+VELOC   6       1  5.1        0.0      1.81
+VELOC   6       2  5.5        1.0      1.81
+VELOC   6       3  6.3        8.25     1.74
+VELOC   6       4  7.2       30.25     1.78
+
+! Model 8 (and 9 for S): VOLCANIC AXIS - Augustine
+VELOC   8       1  2.3        0.0      1.80
+VELOC   8       2  2.6        2.3      1.80
+VELOC   8       3  3.4        3.0      1.80
+VELOC   8       4  5.1        4.0      1.80
+VELOC   8       5  6.3       12.0      1.78
+VELOC   8       6  8.0       47.0      1.78
+
+! Model 10: Akutan model
+!  linear increase over half-space (developed by Jolly, Power and Lahr
+!    in May/June(?) '96)
+VELOC  10       1  2.30       0.0      1.80
+VELOC  10       2  0.37       1.0      1.80
+VELOC  10       3  10.0       2.0      1.80
+VELOC  10       4  6.30       3.0      1.80
+VELOC  10       5  200.       4.0      1.80
+
+! Model 11: Pavlof/Dutton model
+!  layer 1 is from McNutt, BSSA, v. 76, p 153-175, 1986.
+!  lower layers from McNutt and Jacob, JGR, v. 91, p. 5013-5022, 1986.
+!   (note that layer depths are adjusted for reference depth at -3 km)
+!  vp/vs arbitrary for now - cds 07/22/96
+!  Model is also used for Shishaldin.
+VELOC  11       1  3.05       0.00     1.78
+VELOC  11       2  3.44       3.00     1.78
+VELOC  11       3  5.56       4.79     1.78
+VELOC  11       4  6.06       6.65     1.78
+VELOC  11       5  6.72      13.18     1.78
+VELOC  11       6  7.61      25.63     1.78
+VELOC  11       7  7.90      41.51     1.78
+
+! Model 12: Kanaga, Great Sitkin and Moffett (Adak region)
+!  Model modified from Toth and Kisslinger, BSSA, vol. 74,
+!  1984, p. 1349-1360. - SDS
+VELOC  12       1  3.50       0.0      1.73
+VELOC  12       2  3.88       0.2      1.73
+VELOC  12       3  4.25       0.4      1.73
+VELOC  12       4  4.62       0.6      1.73
+VELOC  12       5  5.00       0.8      1.73
+VELOC  12       6  5.50       1.0      1.73
+VELOC  12       7  5.62       2.0      1.73
+VELOC  12       8  5.74       3.0      1.73
+VELOC  12       9  5.86       4.0      1.73
+VELOC  12      10  5.98       5.0      1.73
+VELOC  12      11  6.10       6.0      1.73
+VELOC  12      12  6.60       7.0      1.73
+VELOC  12      13  6.68       8.0      1.73
+VELOC  12      14  6.80      11.0      1.73
+VELOC  12      15  6.92      14.0      1.73
+VELOC  12      16  7.04      17.0      1.73
+VELOC  12      17  7.16      20.0      1.73
+VELOC  12      18  7.28      23.0      1.73
+VELOC  12      19  7.85      26.0      1.73
+VELOC  12      20  8.05      40.0      1.73
+
+! Model 13: Katmai region - Cheryl Searcy's new and improved velocity model.
+! This was determined using VELEST with Art Jolly's (2000) model as the
+! initial model. - SDS
+VELOC  13       1  5.05       0.0      1.78
+VELOC  13       2  5.10       4.0      1.78
+VELOC  13       3  5.41       5.0      1.78
+VELOC  13       4  5.49       6.0      1.78
+VELOC  13       5  5.65       7.0      1.78
+VELOC  13       6  5.67       8.0      1.78
+VELOC  13       7  5.69       9.0      1.78
+VELOC  13       8  5.76      10.0      1.78
+VELOC  13       9  5.80      11.0      1.78
+VELOC  13      10  6.00      12.0      1.78
+VELOC  13      11  6.04      13.0      1.78
+VELOC  13      12  6.08      15.0      1.78
+VELOC  13      13  6.30      18.0      1.78
+VELOC  13      14  6.73      23.0      1.78
+VELOC  13      15  7.54      28.0      1.78
+VELOC  13      16  7.78      36.0      1.78
+
+! Model 14 for Iliamna (developed by Roman in June 2001).
+VELOC  14       1  4.8        0.0      1.78
+VELOC  14       2  6.1        1.4      1.78
+VELOC  14       3  6.2        4.7      1.78
+VELOC  14       4  6.3        5.9      1.78
+VELOC  14       5  6.4        6.1      1.78
+VELOC  14       6  7.1       19.5      1.78
+
+! Model 15 (and 16 for S) for Veniaminof (from John Sanchez's thesis, 2005)
+VELOC  15       1  4.82       0.0      1.73
+VELOC  15       2  5.23       7.0      1.88
+VELOC  15       3  5.23      13.0      1.38
+VELOC  15       4  6.49      18.0      1.65
+VELOC  15       5  6.52      23.0      1.51
+VELOC  15       6  8.18      28.0      1.89
+VELOC  15       7  8.21      36.0      1.90
+VELOC  15       8  8.21      50.0      1.80
+VELOC  15       9  8.30      68.0      1.78
+! Model 17 for Tanaga developed by JP using VELEST. The lower portions of the
+! model were taken from the model derived for the Adak area by Toth and
+! Kisslinger (BSSA, 1984, v. 74, 1349 - 1360) since the Tanaga data set was not
+! well suited for resolving the lower crust. 
+VELOC  17       1  4.0        0.0      1.78
+VELOC  17       2  4.5        1.8      1.78
+VELOC  17       3  5.0        3.0      1.78
+VELOC  17       4  5.6        7.0      1.78
+VELOC  17       5  6.9       13.0      1.78
+VELOC  17       6  7.2       18.0      1.78
+VELOC  17       7  7.8       23.0      1.78
+VELOC  17       8  8.1       36.0      1.78
+! Model 18 for Westdahl was developed by Jim Dixon using VELEST. This model
+! results in slightly improved locations over McNutt's "Pavlof/Dutton model
+VELOC  18       1  3.03       0.0      1.71
+VELOC  18       2  3.18       3.0      1.71
+VELOC  18       3  5.03       5.0      1.71
+VELOC  18       4  5.70      11.0      1.71
+VELOC  18       5  6.30      13.0      1.71
+VELOC  18       6  6.82      19.0      1.71
+VELOC  18       7  7.17      29.0      1.71
+VELOC  18       8  8.16      41.0      1.71

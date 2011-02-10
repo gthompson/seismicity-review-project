@@ -1,0 +1,82 @@
+: # use perl                                                                                                                                                            
+eval 'exec $ANTELOPE/bin/perl -S $0 "$@"'                                                                                                                               
+if 0;                                                                                                                                                                   
+use lib "$ENV{ANTELOPE}/data/perl" ;
+##############################################################################
+# Author: Glenn Thompson (GT) 2009
+#         ALASKA VOLCANO OBSERVATORY
+#
+# Modifications:
+#       2009-03: Created by GT
+#
+# Purpose:
+#       dispatch alarm declarations to email/cellphones
+#
+# To do:
+##############################################################################
+
+use Datascope;
+use Getopt::Std;
+use strict;
+use warnings;
+
+# Get the program name
+our $PROG_NAME;
+($PROG_NAME = $0) =~ s(.*/)();  # PROG_NAME becomes $0 minus any path
+
+# Usage - command line options and arguments
+our ($opt_p, $opt_t, $opt_v, $opt_r, $opt_d);
+if ( ! &getopts('p:t:vr:d') || ($#ARGV != 1) ) {
+    print STDERR <<"EOU" ;
+
+    Usage: $PROG_NAME crustalprmfile vmodeldb 
+
+EOU
+    exit 1 ;
+}
+
+# End of  GT Antelope Perl header
+open(FIN,$ARGV[0]);
+my $table = $ARGV[1].".mod1d";
+my @db = dbopen_table($table, "r+");
+while (my $line = <FIN>) {
+	if ($line=~/VELOC/) {
+		my @fields = split(/\s+/,$line);
+		my $modname = $fields[1];
+		my $paramname = "Pvelocity";
+		my $depth = $fields[4] - 3.0; # Hypoellipse depth 0.0km is actually -3.0km from sea level (i.e. 3km above sea level)
+		my $paramval = $fields[3];
+		my $grad = "0";
+		my $units = "km/s";
+		my $auth = "glenn";
+		print "modname=$modname paramname=$paramname depth=$depth paramval=$paramval grad=$grad units=$units auth=$auth\n";
+		dbaddv(@db, "modname", $modname, "paramname", $paramname, "depth", $depth, "paramval", $paramval, "grad", $grad, "units", $units, "auth", $auth);
+		my $PSratio = $fields[5];
+		if ($PSratio != 0) {
+			$paramval = $paramval / $PSratio;
+			$paramname = "Svelocity";
+			$paramval = sprintf("%.2f", $paramval);
+			print "modname=$modname paramname=$paramname depth=$depth paramval=$paramval grad=$grad units=$units auth=$auth\n";
+			dbaddv(@db, "modname", $modname, "paramname", $paramname, "depth", $depth, "paramval", $paramval, "grad", $grad, "units", $units, "auth", $auth);
+		}
+	}
+}
+close(FIN);
+
+dbclose(@db);
+my $dbset = "dbset -l";		
+system("$dbset $table modname 1 gulf_ak");
+system("$dbset $table modname 2 south62.5");
+system("$dbset $table modname 3 north62.5");
+system("$dbset $table modname 4 rd");
+system("$dbset $table modname 6 sp");
+system("$dbset $table modname 8 au");
+system("$dbset $table modname 10 ak");
+system("$dbset $table modname 11 pa_du");
+system("$dbset $table modname 12 kn_gs");
+system("$dbset $table modname 13 ka");
+system("$dbset $table modname 14 il");
+system("$dbset $table modname 15 vn");
+system("$dbset $table modname 17 ta");
+system("$dbset $table modname 18 ws");
+ 

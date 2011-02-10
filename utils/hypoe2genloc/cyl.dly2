@@ -1,0 +1,49 @@
+c* Cylindrical regions from Hayes to Westdahl:
+c* Delay Veloc  lat   lon    inner  outer  inner outer  inner  outer  vel. mod.
+c* Mod # Mod #               radius radius top   top    botton botton
+c* Hayes
+   3     6      61.60 152.40 20.    20.    -3.   -3.    50.    50.  sp
+   3     6      61.47 152.33 20.    20.    -3.   -3.    50.    50.  sp
+c* Spurr
+   3     6      61.33 152.25 20.    20.    -3.   -3.    50.    50.  sp
+   3     6      61.17 152.35 20.    20.    -3.   -3.    50.    50.  sp
+   3     6      61.00 152.45 20.    20.    -3.   -3.    50.    50.  sp
+c* Removed last four southern most cylinders because of overlap with the Iliamna model. - SDS 02/05/2004
+c* Redoubt
+   2     4      60.83 152.55 20.    20.    -3.   -3.    50.    50.  rd
+   2     4      60.66 152.66 20.    20.    -3.   -3.    50.    50.  rd
+   2     4      60.49 152.75 20.    20.    -3.   -3.    50.    50.  rd
+   2     4      60.34 152.86 20.    20.    -3.   -3.    50.    50.  rd
+c* Augustine
+   4     8      59.36 153.42 20.    20.    -3.   -3.    50.    50.  au
+c* Akutan
+   4    10      54.15 165.97 20.    20.    -3.   -3.    50.    50.  ak
+c* Pavlof, Dutton, Shishaldin and Westdahl
+c* Changed delay on (08/28/98) model from having radius of 100 km 
+c* centered on Pavlof to 20 km radius cylinders centered on both 
+c* Pavlof and Dutton and added a similar model centered on
+c* Shishaldin. SDS
+c* Removed Westdahl and created a separate cylinder for it. - SDS
+   4    11      55.42 161.89 20.    20.    -3.   -3.    50.    50.  pa_du
+   4    11      55.18 162.27 20.    20.    -3.   -3.    50.    50.  pa_du
+   4    11      54.76 163.97 30.    30.    -3.   -3.    50.    50.  pa_du
+c* Model for Great Sitkin, Moffett & Kanaga. SDS 07/29/1999.
+   4    12      52.08 176.13 20.    20.    -3.   -3.    50.    50.  kn_gs
+   4    12      51.93 176.75 20.    20.    -3.   -3.    50.    50.  kn_gs
+   4    12      51.92 177.17 20.    20.    -3.   -3.    50.    50.  kn_gs
+c* Model for Katmai - SDS 12/13/2000
+c* Changed from 4 to 6 SDS 10/01/2003
+   6    13      58.17 155.35 20.    20.    -3.   -3.    50.    50.  ka
+   6    13      58.29 154.86 20.    20.    -3.   -3.    50.    50.  ka
+   6    13      58.35 155.09 20.    20.    -3.   -3.    50.    50.  ka
+   6    13      58.43 154.38 20.    20.    -3.   -3.    50.    50.  ka
+c* Iliamna
+c* Changed delay model from 2 to 4 (no delays) on 5/28/96.  jcl
+c* Added delays and changed from 4 to 7. SDS
+   7    14      60.03 153.09 20.    20.    -3.   -3.    50.    50.  il
+c* Veniaminof
+   4    15      56.18 159.38 30.    30.    -3.   -3.    50.    50.  vn
+c* Tanaga 
+   8    17      51.89 178.15 20.    20.    -3.   -3.    50.    50.  ta
+c* Westdahl
+   4    18      54.52 164.65 20.    20.    -3.   -3.    50.    50.  ws 

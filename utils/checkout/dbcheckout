@@ -1,0 +1,326 @@
+: # use perl
+eval 'exec $ANTELOPE/bin/perl -S $0 "$@"'
+if 0;
+
+use lib "$ENV{ANTELOPE}/data/perl" ;
+##############################################################################
+# Author: Glenn Thompson (GT) 2009
+#         ALASKA VOLCANO OBSERVATORY
+#
+# History:
+#
+# To do:
+##############################################################################
+
+use Datascope;
+use Getopt::Std;
+
+use strict;
+#use warnings;
+# Get the program name
+our $PROG_NAME;
+($PROG_NAME = $0) =~ s(.*/)();  # PROG_NAME becomes $0 minus any path
+
+# Usage - command line options and arguments
+our ($opt_v, $opt_p);
+if ( ! &getopts('p:v') || $#ARGV > -1  ) {
+    print STDERR <<"EOU" ;
+
+
+    Usage: $PROG_NAME [-p pffile] 
+
+    For more information:
+        > man $PROG_NAME
+EOU
+    exit 1 ;
+}
+
+
+printf("\n**************************************\n\nRunning $PROG_NAME at %s\n\n", epoch2str(now(),"%Y-%m-%d %H:%M:%S"));
+
+#### COMMAND LINE ARGUMENTS
+# None!
+
+
+# read parameter file
+print "Reading parameter file for $PROG_NAME\n" if $opt_v;
+my ($event_db_ref, $station_db, $waveform_db) = &getParams($PROG_NAME, $opt_p, $opt_v);
+
+# End of  GT Antelope Perl header
+###########################################################################################
+use Env;
+use File::Basename qw(dirname basename);
+use File::Path qw(mkpath);
+
+# Include local perl modules
+use lib "/home/glenn/perllib/lib/site_perl";
+
+# Use yesterday for default date
+my @month = qw(JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC);
+my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = gmtime(time()-86400);
+my $inputmonth = $month[$mon];
+my $inputyear = $year + 1900;
+my $input =  "$mday-$inputmonth-$inputyear";
+
+###############################
+# THE FOLLOWING SECTION IS FROM
+# http://www.opensourcetutorials.com/tutorials/Server-Side-Coding/Perl/advanced-widgets-perl-tk/page2.html
+
+use Tk;
+use Tk::DateEntry;
+use Time::Local;
+
+my %idx_for_mon = ( JAN=>1, FEB=>2, MAR=>3, APR=> 4, MAY=> 5, JUN=> 6,
+		 JUL=>7, AUG=>8, SEP=>9, OCT=>10, NOV=>11, DEC=>12 );
+#$input = '01-APR-2004'; # Initial value for display
+
+my $mw = MainWindow->new();
+#$mw->geometry( '200x80' );
+$mw->geometry( '560x160' );
+$mw->resizable( 0, 0 );
+
+our $progressLabel = $mw->Label( -text=>'' )->pack(-side=>'bottom');
+my $dateentryLabel = $mw->Label( -text=>'Which Day?' )->pack(-side=>'top');
+my $dayDateEntry = $mw->DateEntry( -textvariable=>\$input, -width=>11,
+			 -parsecmd=>\&parse, -formatcmd=>\&format )->pack(-side=>'top');
+our $label;
+$mw->Button( -text=>'Quit', -command=>sub{ exit } )->pack( -side=>'right' );
+#$mw->Button( -text=>'Convert',
+#	     -command=>sub{ convert( $input, $label ) } )->pack( -side=>'left' );
+
+# Add a checkout widget
+$mw->Button( -text=>'Checkout',
+	     -command=>sub{ checkout( $input, $label ) } )->pack( -side=>'left' );
+
+# Add a user widget
+our $analyst=$ENV{USER};
+#my $analystListBox = $mw->Scrolled("Listbox", -scrollbars => "e", -selectmode => 'single', -height=>3)->pack();
+#$analystListBox->insert('end',qw/scott jp jim cheryl glenn/);
+#$analystListBox->activate(1);
+#$analystListBox->focus();
+#$analystListBox->bind('<Button-1>',
+#	sub { 
+#		$analyst = $analystListBox->curselection(); 
+#		#print "$analyst\n";
+#	}
+#);
+
+# Add a db widget
+our $event_db;
+my $dbListBox = $mw->Scrolled("Listbox", -scrollbars => "e", -selectmode => 'single', -height=>4, -width=>50)->pack();
+$dbListBox->insert('end',@$event_db_ref);
+$dbListBox->activate(1);
+$dbListBox->focus();
+$dbListBox->bind('<Button-1>',
+	sub { 
+		my $myref = $dbListBox->curselection(); 
+		my $index=@$myref[0];
+		$event_db = @$event_db_ref[$index];
+		print "$event_db\n";
+	}
+);
+
+# Add an origin filter widget
+our $filter;
+our $expression;
+my @filters = ("All origins", "All Earthworm origins", "All Earthworm origins not associated with an AEIC or USGS origin"); 
+my @expressions = (" ", "origin.auth=~/ew.*/", "not associated");
+my $filterListBox = $mw->Scrolled("Listbox", -scrollbars => "e", -selectmode => 'single', -height=>4, -width=>50)->pack();
+$filterListBox->insert('end',@filters);
+$filterListBox->activate(1);
+$filterListBox->focus();
+$filterListBox->bind('<Button-1>',
+	sub { 
+		my $myref = $filterListBox->curselection(); 
+		my $index=@$myref[0];
+		$filter = $filters[$index];
+		$expression = $expressions[$index];
+		print "$filter\n";
+	}
+);
+
+MainLoop;
+
+# called on dropdown with content of \$textvariable, must return ( $yr, $mon, $day )
+sub parse {
+  my ( $day, $mon, $yr ) = split '-', $_[0];
+  return ( $yr, $idx_for_mon{$mon}, $day );
+}
+
+# called on user selection with ($yr, $mon, $day), must return formatted string
+sub format {
+  my ( $yr, $mon, $day ) = @_;
+  my %mon_for_idx = reverse %idx_for_mon;
+  return sprintf( "%02d-%s-%2d", $day, $mon_for_idx{ $mon }, $yr );
+}
+
+# perform the conversion to epoch seconds when the corresponding button is pressed
+sub convert {
+  my ( $input, $label ) = @_;
+  my ( $yr, $mon, $day ) = parse( $input );
+  my $output = "Epoch seconds: " . timelocal( 0, 0, 0, $day, $mon-1, $yr-1900 );
+  $progressLabel->configure( -text => $output );
+}
+
+###################################
+
+
+###############################################################################
+### CHECKOUT DAY FOR PROCESSING                                              ##
+###############################################################################  
+# Check-out the daily database for processing
+sub checkout {
+  my ( $input, $label ) = @_;
+  my ( $yr, $mon, $day ) = parse( $input );
+  my $sepoch = timelocal( 0, 0, 0, $day, $mon-1, $yr-1900 );
+  my $eepoch = $sepoch + 86400;
+  my $sepochstr = epoch2str($sepoch, '%m/%d/%Y');
+  my $eepochstr = epoch2str($eepoch, '%m/%d/%Y');
+  my $Ymd = epoch2str($sepoch, '%Y_%m_%d');
+  my $output = "Extracting $yr/$mon/$day from $event_db";
+  my $output = "Extracting $Ymd from $event_db";
+  $progressLabel->configure( -text => $output );
+
+  #my $mydb = $ENV{USER}.$yr.$mon.$day;
+
+  my $dbbase = basename $event_db;
+  my $mydb = $dbbase."_".$PROG_NAME."_".$analyst."_".$Ymd;
+  
+  # Extract
+  #$event_dbpath = db2dbpath($event_db, $yr, $mon, $day);
+  if ($expression eq "not associated") {
+	print "SCAFFOLD: Here I need to add code to only select associated origins - some of my other codes may already do this\n";
+  }
+  print "SCAFFOLD: Note I also probably want extractavodb in avo_ws\n";
+  &runCommand("extractavodb -af -i $event_db $sepochstr $eepochstr $mydb $expression", 1);
+  &runCommand("makelastid $mydb");
+
+  # Rewrite descriptor
+  # First make sure the waveform database exists
+  my $waveform_dbpath = db2dbpath($waveform_db, $yr, $mon, $day);
+  # Then make sure the station database exists
+  my $station_dbpath = db2dbpath($station_db);
+  # Write descriptor
+  open(FDESC, ">$mydb");
+  print FDESC<<"EOF";
+#
+schema css3.0
+dbpath $station_dbpath:$waveform_dbpath
+EOF
+  close(FDESC);
+
+  exit;
+}
+
+###############################################################################
+## DB2DBPATH
+###############################################################################
+sub db2dbpath {
+	my ($db, $y, $m, $d) = @_;
+	my $test_db = "";
+	if (defined($d)) {
+		$d = "0".$d if (length($d) < 2);
+		$m = "0".$m if (length($m) < 2);
+		$test_db = $db."_".$y."_".$m."_".$d;
+	}
+	$test_db = $db unless (-e $test_db);
+	unless (-e $test_db) {
+		print "$test_db does not exist\n";
+		exit;
+	} 
+	my $dir = dirname($db);
+	my $base = basename($test_db);
+	my $dbpath = $dir."/{".$base."}";
+	return $dbpath;
+}	
+
+
+###############################################################################
+### LOAD PARAMETER FILE                                                      ##
+### Load the parameter file for this program, given its path                 ##  
+###############################################################################  
+sub getParams {                                                                  
+
+        my ($PROG_NAME, $opt_p, $opt_v) = @_;
+        my $pfobjectref = &getPf($PROG_NAME, $opt_p, $opt_v);
+   
+        my ($event_db, $station_db,$waveform_db);     
+                                                                                                                                                                                                                   
+
+        #$event_db          = $pfobjectref->{'event_db'};
+        $event_db_ref          = $pfobjectref->{'event_db'};
+        $station_db             = $pfobjectref->{'station_db'};
+        $waveform_db            = $pfobjectref->{'waveform_db'};
+
+        return ($event_db_ref, $station_db,$waveform_db);
+}
+###############################################################################
+### LOAD PARAMETER FILE                                                      ##
+###                                                                          ##
+### Glenn Thompson, 2009/04/20                                               ##
+###                                                                          ##
+### Load the parameter file for this program, given its path                 ##
+###############################################################################
+sub getPf {
+        my ($PROG_NAME, $opt_p, $opt_v) = @_;
+
+        my ($pfile, $pfobjectref);
+
+        # Get parameter file object reference from all files that match $PROG_NAME.pf along PFPATH cascade
+        my @pfilearr = `pfwhich $PROG_NAME`; # get a list of all pfiles in cascade
+        if ($#pfilearr > -1) {
+                $pfile = $pfilearr[$#pfilearr]; chomp($pfile); # get the last pfile in the cascade
+                if (-e $pfile) { # if pfile exists, read from it
+                        $pfobjectref = pfget($pfile, ""); # read all parameters from pfile into a hash ref
+                }
+        }
+
+        # Override with parameters from a parameter file of a different name if -p option used
+        if ($opt_p) {
+                $pfile = $opt_p;
+                        if (-e $pfile) { # if pfile exists, read from it
+                        $pfobjectref = pfget($pfile, ""); # read all parameters from pfile into a hash ref
+                }
+        }
+
+        # Display parameters if verbose mode is on
+        if ($opt_v) {
+                prettyprint($pfobjectref);
+        }
+
+        return $pfobjectref;
+
+}
+
+######################################################
+### PRETTY PRINT A HASH                             ##
+### prettyprint(\%myhash);                          ##
+###                                                 ##
+### Glenn Thompson, 2009/05/04 after code from BRTT ##
+###                                                 ##
+######################################################
+sub prettyprint {
+        my $val = shift;
+        my $prefix = "";
+        if (@_) { $prefix = shift ; }
+
+        if (ref($val) eq "HASH") {
+                my @keys = sort ( keys  %$val );
+                my %hash = %$val;
+                foreach my $key (@keys) {
+                        my $newprefix = $prefix . "{". $key . "}" ;
+                        prettyprint ($hash{$key}, $newprefix) ;
+                }
+        } elsif (ref($val) eq "ARRAY") {
+                my $i = 0;
+                my @arr = @$val;
+                foreach my $entry ( @$val ) {
+                        my $newprefix = $prefix . "[". $i . "]" ;
+                        prettyprint ($arr[$i], $newprefix) ;
+                        $i++;
+                }
+        } else {
+                print $prefix, " = ", $val, "\n";
+        }
+}
+
