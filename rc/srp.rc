@@ -1,0 +1,2 @@
+export PFPATH=$PFPATH:/home/glenn/src/seismicity-review-project/pf
+export PATH=/home/glenn/src/seismicity-review-project/bin:$PATH
