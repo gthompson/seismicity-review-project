@@ -1,0 +1,33 @@
+#!/usr/bin/perl
+die("$0 dbew\n") if ($#ARGV != 0);
+my ($dbew) = @ARGV;
+
+# Locate events with genloc
+my $dbgenloc = $dbew."_loc";
+print "relocate $dbew $dbgenloc - just for earthworm origins (y/n)?\n";
+my $choice = <STDIN>;
+chomp($choice);
+die("Cancelled\n") unless ($choice eq  "y");
+system("relocate $dbew $dbgenloc -sift \"auth=~/ew.*/ && nass>3\" -useold -pf pf/relocate_ew.pf");
+system("cp $dbew $dbgenloc"); # copy descriptor
+system("cp $dbew.arrival $dbgenloc.arrival");
+
+# Compute Ml with dbevproc
+my $dbevproc=$dbgenloc."_ml"; 
+print "*** Now computing Ml - must have a valid wfdisc table that points to data ***\n";
+print "dbevproc $dbgenloc $dbevproc (y/n)?\n";
+$choice = <STDIN>;
+chomp($choice);
+die("Cancelled\n") unless ($choice eq  "y");
+system("dbevproc -v -p dbevproc_ew $dbgenloc $dbevproc");
+system("cp $dbgenloc $dbevproc");
+foreach my $tbl qw(arrival assoc emodel origerr predarr) {
+	if (-e $dbgenloc.$tbl) {
+		system("cp $dbgenloc.$tbl $dbevproc.$tbl");
+	}
+}
+print "*** FINISHED: Output database is $dbevproc ***\n";
+
+print "SCAFFOLD: Here a script to merge this database back into original could be added\n";
+
+
