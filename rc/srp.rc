@@ -1,2 +1,6 @@
-export PFPATH=$PFPATH:/home/glenn/src/seismicity-review-project/pf
-export PATH=/home/glenn/src/seismicity-review-project/bin:$PATH
+export SRP=/home/glenn/src/seismicity-review-project
+export PFPATH=$PFPATH:$SRP/pf
+export PATH=$SRP/bin:$PATH
+cwake
+cp .dbpickrc $SRP
+cd $SRP
