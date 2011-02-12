@@ -51,6 +51,7 @@ my ($event_db_ref, $station_db, $waveform_db) = &getParams($PROG_NAME, $opt_p, $
 use Env;
 use File::Basename qw(dirname basename);
 use File::Path qw(mkpath);
+use Avoseis::SwarmAlarm;
 
 # Include local perl modules
 use lib "/home/glenn/perllib/lib/site_perl";
@@ -65,10 +66,19 @@ my $input =  "$mday-$inputmonth-$inputyear";
 ###############################
 # THE FOLLOWING SECTION IS FROM
 # http://www.opensourcetutorials.com/tutorials/Server-Side-Coding/Perl/advanced-widgets-perl-tk/page2.html
-
-use Tk;
-use Tk::DateEntry;
-use Time::Local;
+eval {
+	use Tk;
+	use Tk::DateEntry;
+};
+if ($@) {
+	print "Tk Module not found\n";
+}
+eval {
+	use Time::Local;
+};
+if ($@) {
+	print "Time::Local not found\n";
+}
 
 my %idx_for_mon = ( JAN=>1, FEB=>2, MAR=>3, APR=> 4, MAY=> 5, JUN=> 6,
 		 JUL=>7, AUG=>8, SEP=>9, OCT=>10, NOV=>11, DEC=>12 );
@@ -106,8 +116,9 @@ our $analyst=$ENV{USER};
 #);
 
 # Add a db widget
-our $event_db;
+
 my $dbListBox = $mw->Scrolled("Listbox", -scrollbars => "e", -selectmode => 'single', -height=>4, -width=>50)->pack();
+our $event_db = $$event_db_ref[0];
 $dbListBox->insert('end',@$event_db_ref);
 $dbListBox->activate(1);
 $dbListBox->focus();
@@ -122,9 +133,10 @@ $dbListBox->bind('<Button-1>',
 
 # Add an origin filter widget
 our $filter;
-our $expression;
+
 my @filters = ("All origins", "All Earthworm origins", "All Earthworm origins not associated with an AEIC or USGS origin"); 
 my @expressions = (" ", "origin.auth=~/ew.*/", "not associated");
+our $expression = $expressions[0];
 my $filterListBox = $mw->Scrolled("Listbox", -scrollbars => "e", -selectmode => 'single', -height=>4, -width=>50)->pack();
 $filterListBox->insert('end',@filters);
 $filterListBox->activate(1);
@@ -192,8 +204,8 @@ sub checkout {
 	print "SCAFFOLD: Here I need to add code to only select associated origins - some of my other codes may already do this\n";
   }
   print "SCAFFOLD: Note I also probably want extractavodb in avo_ws\n";
-  &runCommand("extractavodb -af -i $event_db $sepochstr $eepochstr $mydb $expression", 1);
-  &runCommand("makelastid $mydb");
+  &runCommand("/usr/local/avoseis/4.11/bin/extractavodb -af -i $event_db $sepochstr $eepochstr $mydb ", 1);
+  &runCommand("makelastid $mydb", 1);
 
   # Rewrite descriptor
   # First make sure the waveform database exists
@@ -322,5 +334,36 @@ sub prettyprint {
         } else {
                 print $prefix, " = ", $val, "\n";
         }
+}
+#############################################################
+### RUNCOMMAND                                             ##
+### $result = runCommand($cmd, $mode);                     ##
+###                                                        ##
+### Glenn Thompson, 2009/04/20                             ##
+###                                                        ##
+### Run a command safely at Unix shell, and return result. ##
+### mode==0 just echoes the command and is for debugging.  ##
+### mode==1 echoes & runs the command.                     ##
+#############################################################
+sub runCommand {
+     my ( $cmd, $mode ) = @_ ;
+     our $PROG_NAME;
+
+     print "$0: $cmd\n";
+     system("echo \"$cmd\" >> logs/runCommand.log") if (-e "logs");
+
+     my $result = "";
+     $result = `$cmd` if $mode;
+     chomp($result);
+     $result =~ s/\s*//g;
+
+     if ($?) {
+         print STDERR "$cmd error $? \n" ;
+         system("echo \"- error $?\" >> logs/runCommand.log") if (-e "logs");
+         # unknown error
+         exit(1);
+     }
+
+     return $result;
 }
 
