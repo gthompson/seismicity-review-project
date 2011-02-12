@@ -62,7 +62,7 @@ die("Cancelled\n") unless ($choice eq  "y");
 runCommand("dbevproc -v -p dbevproc_ew $dbgenloc $dbevproc", 1);
 runCommand("cp $dbgenloc $dbevproc", 1);
 foreach my $tbl qw(arrival assoc emodel origerr predarr) {
-	if (-e $dbgenloc.$tbl) {
+	if (-e "$dbgenloc.$tbl") {
 		runCommand("cp $dbgenloc.$tbl $dbevproc.$tbl", 1);
 	}
 }
