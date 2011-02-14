@@ -86,7 +86,7 @@ my %idx_for_mon = ( JAN=>1, FEB=>2, MAR=>3, APR=> 4, MAY=> 5, JUN=> 6,
 
 my $mw = MainWindow->new();
 #$mw->geometry( '200x80' );
-$mw->geometry( '560x160' );
+$mw->geometry( '560x250' );
 $mw->resizable( 0, 0 );
 
 our $progressLabel = $mw->Label( -text=>'' )->pack(-side=>'bottom');
@@ -134,8 +134,8 @@ $dbListBox->bind('<Button-1>',
 # Add an origin filter widget
 our $filter;
 
-my @filters = ("All origins", "All Earthworm origins", "All Earthworm origins not associated with an AEIC or USGS origin"); 
-my @expressions = (" ", "origin.auth=~/ew.*/", "not associated");
+my @filters = ("All origins", "All Earthworm origins", "All AEIC origins", "All Earthworm origins not associated with an AEIC or USGS origin"); 
+my @expressions = ("origin.auth=~/.*/", "origin.auth=~/ew.*/", "origin.auth=~/oa.*/ || origin.auth=~/UAF.*/", "not associated");
 our $expression = $expressions[0];
 my $filterListBox = $mw->Scrolled("Listbox", -scrollbars => "e", -selectmode => 'single', -height=>4, -width=>50)->pack();
 $filterListBox->insert('end',@filters);
@@ -150,6 +150,30 @@ $filterListBox->bind('<Button-1>',
 		print "$filter\n";
 	}
 );
+
+#my($InputText) = $mw->Scrolled('TextUndo',
+#			       -height => '1',
+#			       -width => '1',
+#			       -scrollbars => 'osoe',
+#			       );
+#$InputText ->pack(qw/-side top -fill both -expand 1/);
+
+#my $file = $mw->getOpenFile( );
+#&do_something($file) if defined $file;
+
+#my $sfile = $mw->getSaveFile( );
+#&do_somethingelse($sfile) if defined $sfile;
+
+#my $answer = $mw->Dialog(-title => 'Please Reply', 
+#   -text => 'Would you like to continue?', 
+#   -default_button => 'yay', -buttons => [ 'yay', 'nay'], 
+#   -bitmap => 'question' )->Show( );
+#if ($answer eq 'yay') {
+#  # ... do something ...
+#}
+
+#$mw->Label(-text => "What's your name?")->pack(-side => "left");
+#$mw->Entry(-background => 'black', -foreground => 'white')->pack(-side => "right");
 
 MainLoop;
 
@@ -196,7 +220,14 @@ sub checkout {
   #my $mydb = $ENV{USER}.$yr.$mon.$day;
 
   my $dbbase = basename $event_db;
-  my $mydb = $dbbase."_".$PROG_NAME."_".$analyst."_".$Ymd;
+  #my $mydb = $dbbase."_".$PROG_NAME."_".$analyst."_".$Ymd;
+  my $mydb;
+  {
+	my $index=0;
+  	while (-e ($mydb = "mydb".$index."_".$Ymd)) {
+		$index++;
+	}
+  }
   
   # Extract
   #$event_dbpath = db2dbpath($event_db, $yr, $mon, $day);
@@ -204,7 +235,9 @@ sub checkout {
 	print "SCAFFOLD: Here I need to add code to only select associated origins - some of my other codes may already do this\n";
   }
   print "SCAFFOLD: Note I also probably want extractavodb in avo_ws\n";
-  &runCommand("/usr/local/avoseis/4.11/bin/extractavodb -af -i $event_db $sepochstr $eepochstr $mydb ", 1);
+  #&runCommand("/usr/local/avoseis/4.11/bin/extractavodb -af -i $event_db $sepochstr $eepochstr $mydb $expression", 1);
+  $expression .=  " && (time >= $sepoch && time <= $eepoch)";
+  &runCommand("dbt2dbtsubset -s \"$expression\" $event_db $mydb", 1);
   &runCommand("makelastid $mydb", 1);
 
   # Rewrite descriptor
