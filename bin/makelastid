@@ -1,0 +1,77 @@
+: # use perl
+eval 'exec $ANTELOPE/bin/perl -S $0 "$@"'
+if 0;
+use lib "$ENV{ANTELOPE}/data/perl" ;
+##############################################################################
+# Author: Glenn Thompson (GT) 2009
+# ALASKA VOLCANO OBSERVATORY
+#
+# Modifications:
+# 2009-03: Created by GT
+#
+# Purpose:
+# dispatch alarm declarations to email/cellphones
+#
+# To do:
+##############################################################################
+
+use Datascope;
+use Getopt::Std;
+use strict;
+use warnings;
+
+# Get the program name
+our $PROG_NAME;
+($PROG_NAME = $0) =~ s(.*/)(); # PROG_NAME becomes $0 minus any path
+
+# Usage - command line options and arguments
+if ($#ARGV != 0) {
+print STDERR <<"EOU" ;
+
+Usage: $PROG_NAME eventdb
+
+EOU
+exit 1 ;
+}
+
+# End of GT Antelope Perl header
+my $table = $ARGV[0].".lastid";
+if (-e $table) {
+print "$table exists. Overwrite (y/n)?";
+my $ans = <STDIN>;
+die("\nQuitting\n") if ($ans ne "y");
+} else {
+system("touch $table");
+}
+my @db = dbopen_table($table, "r+");
+
+my %ids =(
+"event" => "evid",
+"origin" => "orid",
+"arrival" => "arid",
+"netmag" => "magid",
+);
+
+foreach my $table2 (keys %ids) {
+my $table2path = $ARGV[0].".$table2";
+my $idval = 1;
+my $idname = $ids{$table2};
+print "Default value for $idname is $idval\n";
+if (-e $table2path) {
+my @db2 = dbopen_table($table2path, "r");
+my $nrecs = dbquery(@db2, "dbRECORD_COUNT");
+if ($nrecs > 0) {
+$db2[3] = $nrecs - 1;
+$idval = dbgetv(@db2, $idname) + 1;
+print "- Override with value $idval from $table2path\n";
+}
+}
+my @db3 = dbsubset(@db,"keyname==\"$idname\"");
+if (dbquery(@db3,"dbRECORD_COUNT")==0) {
+dbaddv(@db, "keyname", $idname, "keyvalue", $idval);
+} else {
+dbputv(@db, "keyname", $idname, "keyvalue", $idval);
+}
+
+}
+dbclose(@db);
