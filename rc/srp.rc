@@ -1,6 +1,13 @@
+export PATH=${PATH_OLD}
+unset PFPATH
+unset DATAPATH
+unset SCHEMA_DIR
+cd
+source .bashrc
 export SRP=/home/glenn/src/seismicity-review-project
-export PFPATH=$PFPATH:$SRP/pf
-export PATH=$SRP/bin:$PATH
 cwake
+export PFPATH=$PFPATH:$SRP/pf:pf
+export PATH=$SRP/bin:$PATH
+export DATAPATH=$DATAPATH:$SRP
 cp .dbpickrc $SRP
 cd $SRP

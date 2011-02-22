@@ -1,0 +1,123 @@
+: # use perl
+eval 'exec $ANTELOPE/bin/perl -S $0 "$@"'
+if 0;
+
+use lib "$ENV{ANTELOPE}/data/perl" ;
+##############################################################################
+# Author: Glenn Thompson (GT) 2007-2008, 2010
+#         Geophysical Institute, University of Alaska Fairbanks
+#
+# Modifications:
+#
+# Purpose:
+#	Add a wfdisc table to an event database spanning many days, but for arrival sta/chans only.
+#
+#       Given a database with an arrival table this wrapper will sort arrivals by
+#	day, then for each stachan and day, it locates the appropriate wfdisc table
+#	entries, and makes local versions of them.
+#
+# To do:
+#       * man page
+#
+# History:
+#
+##############################################################################
+
+use Datascope;
+#use orb;
+#require "getopts.pl" ;
+
+use strict;
+use warnings;
+our $PROG_NAME;
+($PROG_NAME = $0) =~ s(.*/)();  # PROG_NAME becomes $0 minus any path
+
+# Usage - command line options and arguments
+our ($opt_s);
+if ( $#ARGV < 0 ) {
+        print STDERR <<"EOU" ;
+
+        Usage: $PROG_NAME dbin
+
+        Also see manpage.
+
+EOU
+        exit 1 ;
+}
+
+# End of  GT Antelope Perl header
+##############################################################################
+
+my ($dbin) = @ARGV;
+die("wfdisc table already exists\n") if (-e "$dbin.wfdisc");
+my @db = dbopen($dbin, "r" ) or die("Cannot open database $dbin\n");
+my @arrival  = dblookup(@db, "", "arrival", "", "" ) or die("Cannot open arrival table for database $dbin\n") ;
+@arrival = dbsubset(@arrival, "iphase==\"P\" || iphase==\"S\"");
+@arrival = dbsort(@arrival, "time");
+my $firstdataday = 928368000; # 1999-06-03 first day of waveform data online
+printf "Skipping forward to first day of archive day = %s\n",epoch2str($firstdataday, "%Y %m %d");	
+#use File::Basename;
+@arrival = dbsubset(@arrival, "time > $firstdataday");
+@arrival = dbsort(@arrival, "time");
+my $nrecs = dbquery(@arrival, "dbRECORD_COUNT");
+die("No records in arrival table\n") if ($nrecs < 1);
+for ($arrival[3]=0; $arrival[3]<$nrecs; $arrival[3]++) {
+	my ($atime, $asta, $achan) = dbgetv(@arrival, qw(time sta chan));
+
+	# find the archive database (with wfdisc table)
+	my $YYYY_MM_DD = epoch2str($atime, "%Y_%m_%d");
+	my $YYYY = epoch2str($atime, "%Y");
+
+	# turns out no data before 1999 anyway online - so the following is unnecessary
+	if ($YYYY < 1996) {
+		# no data in archive
+		next;
+	}
+	if ($YYYY < 1999) {
+		$YYYY_MM_DD = epoch2str($atime, "%y%m%d");
+	}
+
+	my $archivedb = "/iwrun/op/db/archive/archive_$YYYY/archive_$YYYY_MM_DD";
+	my $foodb = "foo";
+	system("cp $archivedb $foodb");
+	system("cp $archivedb.wfdisc $foodb.wfdisc");
+	my @dbfoo = dbopen($foodb, "r" ) or die("Cannot open database $foodb\n");
+	my @wfdisc  = dblookup(@dbfoo, "", "wfdisc", "", "" ) or die("Cannot open wfdisc table for database $foodb\n") ;
+	@wfdisc = dbsubset(@wfdisc, "sta == \"$asta\" && chan == \"$achan\"");
+
+	my $bardb = "bar";
+	dbunjoin(@wfdisc, $bardb);
+
+	# get the value of "dir" so we can construct a fulldir path to the waveform data
+	my @dbbar = dbopen($bardb, "r" ) or die("Cannot open database $bardb\n");
+	my @wfdisc2  = dblookup(@dbbar, "", "wfdisc", "", "" ) or die("Cannot open wfdisc table for database $bardb\n") ;
+	$wfdisc2[3]=0;
+	my $dir = dbgetv(@wfdisc2, "dir");
+	print "DIR = $dir\n";
+	unless ($dir =~ /^\//) { # does it start with an absolute path?
+		my $fulldir = "/iwrun/op/db/archive/archive_$YYYY/$dir";
+		print "FULLDIR = $fulldir\n";
+		unless (-e $fulldir) {
+			print "THE DIRECTORY $fulldir DOES NOT EXIST !!\n";
+			next;
+		}
+		print "DBSET\n";
+		system("dbset $bardb.wfdisc dir $dir $fulldir");
+	}
+		
+
+	# append to $dbin.wfdisc	
+	system("cat $bardb.wfdisc >> $dbin.wfdisc");
+	system("rm  $bardb* $foodb*");
+	dbclose(@dbbar);
+	dbclose(@dbfoo);
+
+}
+dbclose(@arrival);
+dbclose(@db);
+
+# Finally sort and uniq the wfdisc table
+# probably want to sort on time, then chan, then sta  so awk ideal
+
+
+

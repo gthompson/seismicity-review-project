@@ -45,7 +45,8 @@ time_distance_weighting	0
 # from original relocate.pf
 # time_distance_weighting	true
 #velocity_model_name	iasp91
-velocity_model_name	south62.5
+#velocity_model_name	south62.5
+velocity_model_name	ka
 clock_error_cutoff	0.1
 fix_depth	false
 initial_depth	0.0

@@ -3,6 +3,7 @@ event_db &Tbl{
 	/avort/devrun/events/earthworm/events_earthworm
 	/avort/devrun/events/antelope/events_antelope
 	/avort/devrun/events/xpick/events_xpick
+	/Seis/Kiska4/picks/Total/Total
 }
 station_db	/avort/devrun/dbmaster/master_stations
 waveform_db	/avort/devrun/db/archive
