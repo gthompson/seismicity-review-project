@@ -1,0 +1,138 @@
+: # use perl
+eval 'exec $ANTELOPE/bin/perl -S $0 "$@"'
+if 0;
+
+use lib "$ENV{ANTELOPE}/data/perl" ;
+##############################################################################
+# Author: Glenn Thompson (GT) 2007-2008, 2010
+#         Geophysical Institute, University of Alaska Fairbanks
+#
+# Modifications:
+#
+# Purpose:
+#	Add a wfdisc table to an event database spanning many days, but for arrival sta/chans only.
+#
+#       Given a database with an arrival table this wrapper will sort arrivals by
+#	day, then for each stachan and day, it locates the appropriate wfdisc table
+#	entries, and makes local versions of them.
+#
+# To do:
+#       * man page
+#
+# History:
+#
+##############################################################################
+
+use Datascope;
+#use orb;
+#require "getopts.pl" ;
+
+use strict;
+use warnings;
+our $PROG_NAME;
+($PROG_NAME = $0) =~ s(.*/)();  # PROG_NAME becomes $0 minus any path
+
+# Usage - command line options and arguments
+our ($opt_s);
+if ( $#ARGV < 0 ) {
+        print STDERR <<"EOU" ;
+
+        Usage: $PROG_NAME dbin
+
+        Also see manpage.
+
+EOU
+        exit 1 ;
+}
+
+# End of  GT Antelope Perl header
+##############################################################################
+
+my ($dbin) = @ARGV;
+die("wfdisc table already exists\n") if (-e "$dbin.wfdisc");
+my @db = dbopen($dbin, "r+");
+my @dbarrival  = dblookup(@db, "", "arrival", "", "");
+@dbarrival = dbsubset(@dbarrival, "iphase==\"P\" || iphase==\"S\"");
+@dbarrival = dbsort(@dbarrival, "time");
+my $firstdataday = 928368000; # 1999-06-03 first day of waveform data online
+printf "Skipping forward to first day of archive day = %s\n",epoch2str($firstdataday, "%Y %m %d");	
+#use File::Basename;
+@dbarrival = dbsubset(@dbarrival, "time > $firstdataday");
+@dbarrival = dbsort(@dbarrival, "time");
+my $nrecs = dbquery(@dbarrival, "dbRECORD_COUNT");
+#system("touch $dbin.wfdisc");
+my @dbwfdisc = dblookup(@db, "", "wfdisc", "", "");
+die("No records in arrival table\n") if ($nrecs < 1);
+
+# Now loop through all arrivals and build a list of unique stachans
+# But everytime there is a change in arrival time day, pop all the stachans and use the list to subset the wfdisc table for that day
+my $last_YYYY_MM_DD = "";
+my @stas = [];
+for ($dbarrival[3]=0; $dbarrival[3]<$nrecs; $dbarrival[3]++) {
+	my ($atime, $asta, $achan) = dbgetv(@dbarrival, qw(time sta chan));
+	my $count = grep /$asta/, @stas;
+	push @stas, $asta if ($count==0);
+	my $YYYY_MM_DD = epoch2str($atime, "%Y_%m_%d");
+	if (($YYYY_MM_DD ne $last_YYYY_MM_DD) && ($last_YYYY_MM_DD ne "") ){
+		# change of day
+		my $YYYY=substr($last_YYYY_MM_DD,0,4);
+		my $wfdiscpath = "/iwrun/op/db/archive/archive_".$YYYY."/archive_".$last_YYYY_MM_DD.".wfdisc";
+		print "\nExtracting wfdisc rows from $wfdiscpath\n";
+		my $expression = "";
+		while (my $thissta = pop @stas) {
+			# add this stachan to subset expression
+			if (length($thissta) > 2 && length($thissta) < 6) {
+				$expression .= " || " if ($expression ne "");
+				$expression .= "(sta == \"$thissta\")";
+			}
+			$expression .= " && (chan =~ /[BES]H[ZNE]/) ";
+		}
+		if (-f $wfdiscpath) { # ignore symbolic links, as those could be links to a multi-day wfdisc table, which could cause duplicate rows in my output
+			my @archivewfdisc = dbopen_table($wfdiscpath, "r" ) or die("Cannot open database $wfdiscpath\n");
+			@archivewfdisc= dbsubset(@archivewfdisc, $expression);
+			for ($archivewfdisc[3]=0; $archivewfdisc[3]<dbquery(@archivewfdisc, "dbRECORD_COUNT"); $archivewfdisc[3]++) {
+				my ($wsta, $wchan, $time, $wfid, $chanid, $jdate, $endtime, 
+					$nsamp, $samprate, $calib, $calper, $instype, $segtype, 
+					$datatype, $clip, $dir, $dfile, $foff, $commid, $lddate) 
+					= dbgetv(@archivewfdisc, qw(sta chan time wfid chanid jdate endtime 
+					nsamp samprate calib calper instype segtype datatype clip 
+					dir dfile foff commid lddate));
+				printf "$wsta $wchan %s $wfid $chanid\n", epoch2str($time, "%Y/%m/%d %H:%M:%S");
+				my $fulldir = "/iwrun/op/db/archive/archive_$YYYY/$dir" unless ($dir =~ /^\//);  # does it start with an absolute path?
+				eval {
+					dbaddv(@dbwfdisc, 
+						"sta", $wsta, 
+						"chan", $wchan, 
+						"time", $time, 
+						"wfid", $wfid, 
+						"chanid", $chanid, 
+						"jdate", $jdate, 
+						"endtime", $endtime, 
+						"nsamp", $nsamp, 
+						"samprate", $samprate, 
+						"calib", $calib, 
+						"calper", $calper, 
+						"instype", $instype, 
+						"segtype", $segtype, 
+						"datatype", $datatype, 
+						"clip", $clip, 
+						"dir", $fulldir, 
+						"dfile", $dfile, 
+						"foff", $foff, 
+						"commid", $commid
+					);
+				};
+				if ($@) {
+					print "Duplicate row - skipped\n";
+				}
+			}
+		#	dbclose(@archivewfdisc);
+		}
+		
+	}
+	$last_YYYY_MM_DD = $YYYY_MM_DD;
+}
+#dbclose(@dbwfdisc);
+#dbclose(@dbarrival);
+dbclose(@db);
+

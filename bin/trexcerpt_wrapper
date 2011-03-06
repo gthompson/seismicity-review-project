@@ -47,9 +47,9 @@ EOU
 ##############################################################################
 
 my ($dbin, $dbout) = @ARGV[0..1];
-my $pretrigger = 20;
+my $pretrigger = 40;
 $pretrigger = $ARGV[2] if ($#ARGV>2);
-my $duration = 60;
+my $duration = 120;
 $duration = $ARGV[3] if ($#ARGV>2);
 
 die("wfdisc table does not exist - try add_wfdisc first\n") unless (-e "$dbin.arrival");
@@ -57,5 +57,9 @@ die("arrival table does not exist\n") unless (-e "$dbin.arrival");
 die("wfdisc table already exists\n") if (-e "$dbout.arrival");
 die("wfdisc table already exists\n") if (-e "$dbout.wfdisc");
 print "trexcerpt -e -E -p -vv -m arrival $dbin $dbout 'arrival.time-$pretrigger' $duration\n";
-system("trexcerpt -e -E -p -vv -m arrival $dbin $dbout 'arrival.time-$pretrigger' $duration ");
-
+eval {
+	system("trexcerpt -e -E -p -vv -m arrival $dbin $dbout 'arrival.time-$pretrigger' $duration ");
+};
+if ($@) {
+	print "trexcerpt crashed\n$@\n";
+}

@@ -49,6 +49,7 @@ EOU
 ##############################################################################
 
 my ($dbin) = @ARGV;
+if (0) {
 die("wfdisc table already exists\n") if (-e "$dbin.wfdisc");
 my @db = dbopen($dbin, "r" ) or die("Cannot open database $dbin\n");
 my @arrival  = dblookup(@db, "", "arrival", "", "" ) or die("Cannot open arrival table for database $dbin\n") ;
@@ -115,9 +116,36 @@ for ($arrival[3]=0; $arrival[3]<$nrecs; $arrival[3]++) {
 }
 dbclose(@arrival);
 dbclose(@db);
+}
 
-# Finally sort and uniq the wfdisc table
-# probably want to sort on time, then chan, then sta  so awk ideal
+my @dbw = dbopen_table($dbin.".wfdisc", "r+");
+@dbw = dbsort(@dbw, qw(wfid));
+my $numrows = dbquery(@dbw, "dbRECORD_COUNT");
+if ($numrows > 0) {
+	print "Processing $numrows wfdisc records\n";
+	my $lastwfid = "";
+	for ($dbw[3]=0; $dbw[3]<$numrows; $dbw[3]++) {
+		my $wfid = dbgetv(@dbw, "wfid");
+		printf "Record #%d: $lastwfid==$wfid ? ",$dbw[3];
 
+		if ($lastwfid eq $wfid) {
+			# equal
+			print " - duplicate - deleting $wfid ";
+			dbmark(@dbw);
+		} else {
+			print " - unique ";
+			$lastwfid = $wfid;
+		}
+		print "\n";
+	}
+}	
+print "crunching view\n";
+dbcrunch(@dbw);
+print "saving view\n";
+dbunjoin(@dbw, "foobar");
+print "closing view\n";
+dbclose(@dbw);
+
+print "success\n";
 
 
