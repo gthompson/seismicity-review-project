@@ -1,9 +1,10 @@
 event_db &Tbl{
-	/avort/devrun/events/unreviewed/events
-	/avort/devrun/events/earthworm/events_earthworm
-	/avort/devrun/events/antelope/events_antelope
-	/avort/devrun/events/xpick/events_xpick
-	/Seis/Kiska4/picks/Total/Total
+	/sun/avort/devrun/events/unreviewed/events
+	/sun/avort/devrun/events/earthworm/events_earthworm
+	/sun/avort/devrun/events/antelope/events_antelope
+	/sun/avort/devrun/events/xpick/events_xpick
+	/sun/Seis/Kiska4/picks/Total/Total
 }
-station_db	/avort/devrun/dbmaster/master_stations
-waveform_db	/avort/devrun/db/archive
+station_db	/sun/avort/devrun/dbmaster/master_stations
+#waveform_db	/sun/avort/devrun/db/archive
+waveform_db	/sun/iwrun/op/db/archive
